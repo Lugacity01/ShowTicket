@@ -22,7 +22,10 @@ app.use('/api/stripe', express.raw({type: 'application/json'}), stripeWebhooks)
 
 // Middleware
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+    origin: "https://showticket.vercel.app",
+    credentials: true,
+  }))
 app.use(clerkMiddleware())
 
 // API Routes
