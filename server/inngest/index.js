@@ -86,35 +86,47 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
 
 // Inngest function to send email when user boooks a show
 const sendBookingConfirmationEmail = inngest.createFunction(
-  {id: "send-booking-confirmation-email"},
-  {event: "app/show.booked"},
-  async ({event, step}) =>{
-    const {bookingId} = event.data
+  { id: "send-booking-confirmation-email" },
+  { event: "app/show.booked" },
+  async ({ event, step }) => {
+    const { bookingId } = event.data;
+    console.log("🔔 Function triggered with bookingId:", bookingId);
 
-    const booking = await Booking.findById(bookingId).populate({
-      path: 'show',
-      populate: {path: "movie", model: "Movie"}
-    }).populate('user')
-    
+    const booking = await Booking.findById(bookingId)
+      .populate({
+        path: 'show',
+        populate: { path: "movie", model: "Movie" },
+      })
+      .populate('user');
+
+    if (!booking || !booking.user?.email) {
+      console.error("🚨 Booking or user email not found");
+      return;
+    }
+
+    console.log("📧 Sending email to:", booking.user.email);
+
     await sendEmail({
       to: booking.user.email,
       subject: `Payment Confirmation "${booking.show.movie.title}" booked!`,
       body: `
-      <div style='font-family: Arial, sans-serif; line-height: 1.5;'>
+        <div style='font-family: Arial, sans-serif; line-height: 1.5;'>
           <h2>Hi ${booking.user.name},</h2>
           <p>Your booking for <strong style='color: #F84565;'>"${booking.show.movie.title}"</strong> is confirmed.</p>
           <p>
-            <strong>Date:</strong> ${new Date(booking.show.showDateTime).toLocaleDateString('en-US', {timeZone:"Asia/Kolkata"})} <br/>
-            <strong>Time:</strong> ${new Date(booking.show.showDateTime).toLocaleDateString('en-US', {timeZone:"Asia/Kolkata"})} <br/>
+            <strong>Date:</strong> ${new Date(booking.show.showDateTime).toLocaleDateString('en-US', { timeZone: "Asia/Kolkata" })} <br/>
+            <strong>Time:</strong> ${new Date(booking.show.showDateTime).toLocaleTimeString('en-US', { timeZone: "Asia/Kolkata" })} <br/>
           </p>
           <p>Enjoy the show!</p>
-          <p>Thanks for booking with us! <br/> - ShowTicket Team </p>
-      </div>
-`
-    })
-  }
+          <p>Thanks for booking with us! <br/> - ShowTicket Team</p>
+        </div>
+      `,
+    });
 
-)
+    console.log("✅ Email sent!");
+  }
+);
+
 
 
 
